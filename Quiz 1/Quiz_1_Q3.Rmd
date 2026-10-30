@@ -1,0 +1,113 @@
+---
+title: "Quiz 1, Question set 3"
+output: html_notebook
+---
+
+### Question 3
+
+```{r}
+n <- 19; p <- 2;   # n observations, p variables
+conf <- 0.90       # confidence level
+xbar <- c(-2.3, 4.1)  # sample mean, this is the centre of the ellipsoid
+S <- matrix(c(8, 1,
+              1, 6), nrow = 2, byrow = TRUE)  #sample vcv matrix
+
+# Eigendecomposition: axes of the ellipse point along the eigenvectors
+e   <- eigen(S)
+lambda <- e$values  # the larger eigenvalue (8.41) sets the long axis
+evectors   <- e$vectors
+
+print("eigenvalues")
+print(lambda)
+cat("\n")
+
+print("eigenvectors")
+print(evectors)
+cat("\n")
+
+# Fix signs so eigenvector 1 (D -> C) points north-east and eigenvector 2 (A -> B) points north-west
+# If you don't do this then the ellipse points will not match what is expected
+if (evectors[1, 1] < 0) evectors[, 1] <- -evectors[, 1]
+if (evectors[1, 2] > 0) evectors[, 2] <- -evectors[, 2]
+
+print("eigenvectors re-pointed")
+print(evectors)
+
+```
+
+### Question 3a: Sigma unknown: Hotelling T^2 critical value
+
+```{r}
+
+# The formulas come from Topic 4 Confidence intervals and hypothesis tests for the mean vector.
+# https://edstem.org/au/courses/41412/lessons/119135/slides/817755
+# The section “Confidence region for the mean vector” says the ellipse axes point along the eigenvectors of S, with
+# half-lengths = √λᵢ · √(p(n−1)/(n(n−p)) · F)
+# hl = sqrt(lambda * c2); where c2 is the critical value which could be either Hotelling T^2 or chi-square
+
+# Function to calculate the ends of the axes: mean +/- hl
+
+ellipse_points <- function(c2) {
+  hl <- sqrt(lambda * c2)
+  rbind(A_southeast = xbar - hl[2] * evectors[, 2],
+        B_northwest = xbar + hl[2] * evectors[, 2],
+        C_northeast = xbar + hl[1] * evectors[, 1],
+        D_southwest = xbar - hl[1] * evectors[, 1])
+}
+
+# https://edstem.org/au/courses/41412/lessons/119135/slides/817755
+# Confidence region for the mean vector
+
+c2_T <- p * (n - 1) / (n * (n - p)) * qf(conf, p, n - p)
+round(ellipse_points(c2_T), 4)
+
+```
+
+### Question 3b: Sigma known: chi-square critical value
+
+```{r}
+# https://edstem.org/au/courses/41412/lessons/119135/slides/817753
+# paragraph on "...known covariance matrix...tables of the χ2-distribution will suffice to perform the above test in the multivariate case."
+
+ellipse_points_chi <- function(c2_chi) {
+  hl <- sqrt(lambda * c2_chi)
+  rbind(A_southeast = xbar - hl[2] * evectors[, 2],
+        B_northwest = xbar + hl[2] * evectors[, 2],
+        C_northeast = xbar + hl[1] * evectors[, 1],
+        D_southwest = xbar - hl[1] * evectors[, 1])
+}
+
+c2_chi <- qchisq(conf, p) / n
+round(ellipse_points_chi(c2_chi), 4)
+
+```
+
+### Question 3c: Projection (T^2) simultaneous intervals
+
+```{r}
+# https://edstem.org/au/courses/41412/lessons/119135/slides/817755
+# Theorem 1.7 (Simultaneous confidence ellipsoid) says that, simultaneously for all l, the interval
+# contains lᵀμ with probability at least 1 − α. Taking l = (1, 0) and then l = (0, 1) gives lᵀSl = s₁₁ and s₂₂, the diagonal of S.
+# So se is √(sⱼⱼ), and c2_T_sim is the p(n−1)/n(n−p)·F constant.
+
+c2_T_sim <- p * (n - 1) / (n * (n - p)) * qf(conf, p, n - p)
+se <- sqrt(diag(S))
+round(cbind(Lower = xbar - sqrt(c2_T_sim) * se, Upper = xbar + sqrt(c2_T_sim) * se), 4)
+
+```
+
+### Question 3d: Bonferroni: t with alpha/(2p) in each tail
+
+```{r}
+# https://edstem.org/au/courses/41412/lessons/119135/slides/817755
+# Equation (1.16) is the one-at-a-time interval
+# The “Bonferroni Method” section says that for m simultaneous statements you set αᵢ = α/m
+
+se_bon <- sqrt(diag(S) / n)
+
+tb <- qt(1 - ((1 - conf) / (2 * p)), n - 1)
+
+round(cbind(Lower = xbar - tb * se_bon, Upper = xbar + tb * se_bon), 4)
+
+```
+

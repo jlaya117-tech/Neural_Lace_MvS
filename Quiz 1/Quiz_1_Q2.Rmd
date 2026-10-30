@@ -1,0 +1,74 @@
+---
+title: "Quiz 1, Question set 2"
+output: html_notebook
+---
+
+### Question 2a: Characteristic polynomial
+
+```{r}
+# https://edstem.org/au/courses/41412/lessons/119127/slides/817728
+# Characteristic polynomial: See example example 0.12
+
+Sigma <- matrix(c(6, 3,
+                  3, 8), nrow = 2, byrow = TRUE)
+
+print(Sigma)
+cat("\n")
+
+# Characteristic polynomial: lambda^2 - tr(Sigma)*lambda + det(Sigma)
+tr  <- sum(diag(Sigma))
+dt  <- det(Sigma)
+cat("(a) lambda^2 -", tr, "* lambda +", dt, "\n")
+
+```
+
+### Question 2b: Eigenvalues and Eigenvectors
+
+```{r}
+# https://edstem.org/au/courses/41412/lessons/119127/slides/817728
+# See example 0.12 for R code
+
+# Eigenvalues and #Eigenvectors
+eigen <- eigen(Sigma)
+lambda <- eigen$values     # eigen() returns eigenvalues in decreasing order
+evectors <- eigen$vectors  # columns are normalised eigenvectors
+
+print("Eigenvalues")
+print(round(lambda, 4))
+cat("\n")
+print("Eigenvectors")
+print(round(evectors, 4))
+
+```
+
+### Question 2c: Sigma^(1/2)
+
+```{r}
+# https://edstem.org/au/courses/41412/lessons/119127/slides/817728
+# See equation (0.8), X = PΛPᵀ, where P holds the orthonormal eigenvectors
+# Use windows Characters Map and open the app. Check the "Advanced view" box, search for modifier letter capital t, click Select, and then Copy.
+# equation (0.10) defines sigma^(1/2) using sqrt(lambda)
+
+# Sigma^(1/2) = P diag(sqrt(lambda)) Pᵀ
+Sigma_half <- evectors %*% diag(sqrt(lambda)) %*% t(evectors)
+print(round(Sigma_half, 4))
+
+```
+
+### Question 2d: Sigma^(-1/2)
+
+```{r}
+
+# (d) Sigma^(-1/2) = P diag(1/sqrt(lambda)) Pᵀ
+Sigma_neghalf <- evectors %*% diag(1 / sqrt(lambda)) %*% t(evectors)
+print(round(Sigma_neghalf, 4))
+cat("\n")
+
+# Checks
+print("Checks")
+round(Sigma_half %*% Sigma_half, 6)                  # this should equal Sigma
+round(Sigma_neghalf %*% Sigma %*% Sigma_neghalf, 6)  # this should equal identity
+
+```
+
+

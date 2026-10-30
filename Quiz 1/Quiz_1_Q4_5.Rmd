@@ -1,0 +1,82 @@
+---
+title: "Quiz 1, Question set 4 and 5"
+output: html_notebook
+---
+
+# Load data
+
+```{r}
+data_df <- read.csv("Q_4_5_bridges.csv")
+
+```
+
+# Generate scatter plots
+
+```{r}
+library(GGally)
+data_df_num <- data_df[, c("erected", "length")]
+ggpairs(data_df_num)
+
+```
+
+# Question 4: Tests of Normality
+
+```{r}
+library(MVN)
+
+result <- mvn(data = data_df_num, mvn_test = "mardia")
+result$multivariate_normality
+result$univariate_normality
+
+```
+
+# Question 5: T2 test statistic, degrees of freedom, p-value
+# Comparison of two mean vectors (equal Σ’s)
+
+```{r}
+
+# Split the data by river: X = Monongahela, Y = Allegheny
+X <- as.matrix(data_df[data_df$river == "M", c("erected", "length")])
+Y <- as.matrix(data_df[data_df$river == "A", c("erected", "length")])
+
+n1 <- nrow(X)
+n2 <- nrow(Y)
+p <- ncol(X)  # for the scaled f-statistic
+
+# Pooled covariance and raw T2
+SX <- cov(X)
+SY <- cov(Y)
+Spooled <- (((n1 - 1) * SX) + ((n2 - 1) * SY)) / (n1 + n2 - 2)
+T2 <- t(as.matrix(colMeans(X) - colMeans(Y))) %*% solve(Spooled * (1 / n1 + 1 / n2)) %*%
+    (as.matrix(colMeans(X) - colMeans(Y)))  # raw T2
+
+print("Raw T2")
+print(T2)
+cat("\n")
+
+# Scale T2 to an F statistic and get the p-value
+Fstat <- T2 * (n1 + n2 - p - 1) / ((n1 + n2 - 2) * p) # scaled F-statistic
+df1 <- p
+df2 <- n1 + n2 - p - 1
+pval <- pf(Fstat, df1, df2, lower.tail = FALSE)
+
+cat("n1 =", n1, "\n")
+cat("n2 =", n2, "\n")
+cat("T2 =", round(T2, 4), "\n")
+cat("F =", round(Fstat, 4)," on df", df1, "and", df2, "\n")
+cat("p-value =", round(pval, 4), "\n")
+cat("\n")
+
+# Cross-check with the packages
+library(Hotelling)
+library(DescTools)
+
+print ("hotelling.test reports raw T2")
+print(hotelling.test(x = X, y = Y, var.equal = TRUE))
+cat("\n")
+print ("HotellingsT2Test reports the scaled Fstat as T.2")
+HotellingsT2Test(X, Y)   
+
+```
+
+
